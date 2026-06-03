@@ -78,8 +78,8 @@ body {
 
 .stream-mock-label {
   position: absolute;
-  top: 10px;
-  left: 12px;
+  bottom: 8px;
+  left: 10px;
   font-size: 10px;
   color: rgba(255,255,255,0.35);
   letter-spacing: 0.1em;
@@ -298,22 +298,18 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.1); }
 
 /* 位置グリッド */
 .position-grid {
-  position: absolute;
-  top: 8px;
-  right: 8px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 3px;
-  z-index: 10;
 }
 .pos-btn {
-  width: 24px;
-  height: 24px;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.2);
+  width: 26px;
+  height: 26px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
   border-radius: 5px;
-  color: rgba(255,255,255,0.5);
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -321,8 +317,8 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.1); }
   transition: all 0.15s;
   padding: 0;
 }
-.pos-btn:hover { background: rgba(255,255,255,0.25); color: #fff; }
-.pos-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pos-btn:hover { border-color: var(--accent); color: var(--text); }
+.pos-btn.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
 
 .divider { border: none; border-top: 1px solid var(--border); }
 
@@ -395,15 +391,6 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.1); }
     <!-- 配信画面モック 16:9 -->
     <div class="stream-mock" id="streamMock">
       <div class="stream-mock-label">1920 × 1080</div>
-
-      <!-- 位置選択グリッド（右上に固定表示） -->
-      <div class="position-grid" id="positionGrid">
-        <button class="pos-btn" data-pos="top-left">↖</button>
-        <button class="pos-btn" data-pos="top-right">↗</button>
-        <button class="pos-btn active" data-pos="bottom-left">↙</button>
-        <button class="pos-btn" data-pos="bottom-right">↘</button>
-      </div>
-
       <div class="stream-overlay-wrap" id="streamOverlayWrap">
         <div class="overlay-bar" id="overlayBar">
           <div class="bar-icon" id="barIcon"></div>
@@ -411,6 +398,17 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.1); }
             <span class="bar-text" id="barText"></span>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- 位置選択（モック外） -->
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span style="font-size:12px; color:var(--muted);">バーの位置</span>
+      <div class="position-grid" id="positionGrid">
+        <button class="pos-btn" data-pos="top-left">↖</button>
+        <button class="pos-btn" data-pos="top-right">↗</button>
+        <button class="pos-btn active" data-pos="bottom-left">↙</button>
+        <button class="pos-btn" data-pos="bottom-right">↘</button>
       </div>
     </div>
 
