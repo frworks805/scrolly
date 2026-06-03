@@ -430,7 +430,7 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.1); }
 
       <div>
         <div class="field-label">テキスト</div>
-        <input class="text-input" type="text" id="textInput" value="Pothoa — driftwood" placeholder="表示するテキストを入力">
+        <input class="text-input" type="text" id="textInput" value="" placeholder="表示するテキストを入力">
       </div>
 
       <hr class="divider">
@@ -617,7 +617,7 @@ const FG_PRESETS = [
 ];
 
 const state = {
-  text: 'Pothoa — driftwood',
+  text: '',
   icon: 'music',
   font: 'noto',
   speed: 14,
@@ -726,6 +726,9 @@ function generateHTML() {
   const radius     = state.shape === 'round' ? '100px' : '8px';
   const iconR      = state.shape === 'round' ? '100px 0 0 100px' : '8px 0 0 8px';
   const fontFamily = FONTS.find(f => f.id === state.font)?.family || FONTS[0].family;
+  const fs         = state.fontSize;
+  const barHeight  = Math.max(44, Math.round(fs * 3.2));
+  const iconSize   = Math.round(fs * 1.4);
   const iconSvg    = ICONS.find(i => i.id === state.icon)?.svg || ICONS[1].svg;
   const iconBlock  = state.icon === 'none' ? '' : `  <div class="icon-pill">${iconSvg}</div>`;
   const iconPillCSS = state.icon === 'none' ? '' : `
@@ -741,9 +744,6 @@ function generateHTML() {
   const animStyle  = state.scroll
     ? `animation: marquee ${speedSec} linear infinite;`
     : `animation: none; transform: translateX(0);`;
-  const fs         = state.fontSize;
-  const barHeight  = Math.max(44, Math.round(fs * 3.2));
-  const iconSize   = Math.round(fs * 1.4);
 
   return `<!DOCTYPE html>
 <html lang="ja">
