@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scrolly — OBS Overlay Maker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;500&family=M+PLUS+Rounded+1c:wght@400;500;700&family=Murecho:wght@300;400;500&family=Kaisei+Decol:wght@400;500;700&family=DotGothic16&family=Zen+Maru+Gothic:wght@400;500;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f4f3f0;
+  --surface: #ffffff;
+  --surface2: #f9f8f6;
+  --border: #e4e1db;
+  --text: #1e1c19;
+  --muted: #928e87;
+  --accent: #4a7c6f;
+  --accent-light: #d4e8e3;
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.07);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans JP', sans-serif;
+  min-height: 100vh;
+  padding: 32px 24px 60px;
+}
+
+/* ヘッダー */
+.header {
+  max-width: 1100px;
+  margin: 0 auto 24px;
+}
+.logo {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.logo-en { font-size: 22px; letter-spacing: -0.01em; }
+.logo-ja { font-size: 13px; color: var(--muted); font-weight: 400; letter-spacing: 0.04em; }
+
+/* 2カラムレイアウト */
+.layout {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* 左カラム：プレビュー固定 */
+.left-col {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 配信画面モック */
+.stream-mock {
+  background: #111;
+  border-radius: var(--radius);
+  aspect-ratio: 16/9;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.stream-mock-label {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.stream-overlay-wrap {
+  position: absolute;
+  bottom: 14%;
+  left: 4%;
+  transform-origin: left bottom;
+}
+
+/* オーバーレイプレビュー */
+.overlay-bar {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  box-shadow: 0 3px 16px rgba(0,0,0,0.25);
+}
+.bar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.bar-icon svg { width: 17px; height: 17px; }
+.bar-text-wrap {
+  flex: 1;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 16px 0 8px;
+}
+.bar-text {
+  white-space: nowrap;
+  display: inline-block;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  animation: marquee 14s linear infinite;
+}
+@keyframes marquee {
+  0%   { transform: translateX(300px); }
+  100% { transform: translateX(-100%); }
+}
+
+/* プレビュー下の情報 */
+.preview-info {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.9;
+}
+.preview-info code {
+  background: var(--border);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text);
+}
+
+/* 右カラム：コントロール */
+.right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.controls {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  margin-bottom: 11px;
+}
+
+.text-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.text-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+/* アイコン */
+.icon-grid {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--muted);
+}
+.icon-btn svg { width: 17px; height: 17px; }
+.icon-btn:hover { border-color: var(--accent); background: var(--accent-light); color: var(--text); }
+.icon-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+.icon-btn.no-icon { font-size: 11px; font-weight: 700; letter-spacing: 0; color: var(--muted); }
+.icon-btn.no-icon.active { color: var(--accent); }
+
+/* フォント */
+.font-grid {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.font-btn {
+  padding: 7px 13px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 100px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+  transition: all 0.15s;
+  line-height: 1.5;
+}
+.font-btn:hover { border-color: var(--accent); color: var(--text); }
+.font-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* スピード・幅 */
+.speed-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.speed-label-s { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--border);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transition: transform 0.1s;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.1); }
+
+/* バー形状 */
+.shape-grid { display: flex; gap: 10px; }
+.shape-btn {
+  flex: 1; height: 52px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.15s;
+  flex-direction: column; gap: 5px;
+}
+.shape-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+.shape-btn.active { border-color: var(--accent); background: var(--accent-light); }
+.shape-preview { width: 70px; height: 16px; background: var(--muted); opacity: 0.5; transition: opacity 0.15s; }
+.shape-btn.active .shape-preview { opacity: 1; background: var(--accent); }
+.shape-label { font-size: 13px; color: var(--muted); }
+.shape-btn.active .shape-label { color: var(--accent); font-weight: 700; }
+
+/* トグル */
+.toggle { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+.toggle input { display: none; }
+.toggle-track { width: 40px; height: 22px; background: var(--border); border-radius: 100px; transition: background 0.2s; position: relative; }
+.toggle input:checked + .toggle-track { background: var(--accent); }
+.toggle-thumb { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.15); transition: transform 0.2s; }
+.toggle input:checked + .toggle-track .toggle-thumb { transform: translateX(18px); }
+
+/* 位置グリッド */
+.position-grid {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  z-index: 10;
+}
+.pos-btn {
+  width: 24px;
+  height: 24px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 5px;
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  padding: 0;
+}
+.pos-btn:hover { background: rgba(255,255,255,0.25); color: #fff; }
+.pos-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.divider { border: none; border-top: 1px solid var(--border); }
+
+/* カラー */
+.color-section { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.preset-dots { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 9px; }
+.dot {
+  width: 26px; height: 26px; border-radius: 50%;
+  cursor: pointer; border: 2.5px solid transparent;
+  transition: transform 0.1s, border-color 0.15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.dot:hover { transform: scale(1.1); }
+.dot.active { border-color: var(--text); }
+.color-picker-row {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 7px 10px;
+}
+.color-picker-row input[type="color"] { width: 22px; height: 22px; border: none; background: none; cursor: pointer; padding: 0; border-radius: 4px; }
+.color-picker-row input[type="text"] { border: none; background: none; font-family: monospace; font-size: 13px; color: var(--text); outline: none; width: 72px; }
+
+/* 出力 */
+.output-section {
+  padding: 16px 24px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--surface2);
+}
+.output-label { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 10px; }
+.output-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 11px 14px; display: flex; align-items: flex-start; gap: 10px; justify-content: center; }
+.copy-btn {
+  background: var(--accent); color: #fff; border: none; border-radius: 7px;
+  padding: 8px 16px; font-family: 'Noto Sans JP', sans-serif;
+  font-size: 12px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+  transition: opacity 0.15s, transform 0.1s; letter-spacing: 0.05em;
+}
+.copy-btn:hover { opacity: 0.85; }
+.copy-btn.copied { background: #7cb99e; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <span class="logo-en">Scrolly</span>
+    <span class="logo-ja">OBS テキストオーバーレイ メーカー</span>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- 左カラム：プレビュー（固定） -->
+  <div class="left-col">
+
+    <!-- プレビュー操作バー -->
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <div style="font-size:11px; color:var(--muted); letter-spacing:0.08em; font-weight:600;">PREVIEW</div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:12px; color:var(--muted);">背景</span>
+        <div style="display:flex; gap:5px;">
+          <div class="preview-bg-btn active" data-bg="#111111" style="width:22px; height:22px; border-radius:50%; background:#111111; cursor:pointer; border:2px solid var(--text);"></div>
+          <div class="preview-bg-btn" data-bg="#444444" style="width:22px; height:22px; border-radius:50%; background:#444444; cursor:pointer; border:2px solid transparent;"></div>
+          <div class="preview-bg-btn" data-bg="#1a1a2e" style="width:22px; height:22px; border-radius:50%; background:#1a1a2e; cursor:pointer; border:2px solid transparent;"></div>
+          <div class="preview-bg-btn" data-bg="#0d1f0d" style="width:22px; height:22px; border-radius:50%; background:#0d1f0d; cursor:pointer; border:2px solid transparent;"></div>
+          <div class="preview-bg-btn" data-bg="#f0f0f0" style="width:22px; height:22px; border-radius:50%; background:#f0f0f0; cursor:pointer; border:2px solid transparent; outline:1px solid #ccc;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 配信画面モック 16:9 -->
+    <div class="stream-mock" id="streamMock">
+      <div class="stream-mock-label">1920 × 1080</div>
+
+      <!-- 位置選択グリッド（右上に固定表示） -->
+      <div class="position-grid" id="positionGrid">
+        <button class="pos-btn" data-pos="top-left">↖</button>
+        <button class="pos-btn" data-pos="top-right">↗</button>
+        <button class="pos-btn active" data-pos="bottom-left">↙</button>
+        <button class="pos-btn" data-pos="bottom-right">↘</button>
+      </div>
+
+      <div class="stream-overlay-wrap" id="streamOverlayWrap">
+        <div class="overlay-bar" id="overlayBar">
+          <div class="bar-icon" id="barIcon"></div>
+          <div class="bar-text-wrap" id="barTextWrap">
+            <span class="bar-text" id="barText"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OBSサイズ案内 -->
+    <div class="preview-info">
+      OBSのブラウザソースのサイズ<br>
+      幅 <code id="obsWidth">480</code>px　高さ <code id="obsHeight">44</code>px
+    </div>
+
+  </div>
+
+  <!-- 右カラム：設定 -->
+  <div class="right-col">
+  <div class="card">
+
+    <div class="controls">
+
+      <div>
+        <div class="field-label">テキスト</div>
+        <input class="text-input" type="text" id="textInput" value="Pothoa — driftwood" placeholder="表示するテキストを入力">
+      </div>
+
+      <hr class="divider">
+
+      <div>
+        <div class="field-label">アイコン</div>
+        <div class="icon-grid" id="iconGrid"></div>
+      </div>
+
+      <hr class="divider">
+
+      <div>
+        <div class="field-label">フォント</div>
+        <div class="font-grid" id="fontGrid"></div>
+      </div>
+
+      <hr class="divider">
+
+      <div>
+        <div class="field-label">バーの形</div>
+        <div class="shape-grid">
+          <button class="shape-btn" id="shapeRound" data-shape="round">
+            <div class="shape-preview" style="border-radius: 100px;"></div>
+            <div class="shape-label">まるい</div>
+          </button>
+          <button class="shape-btn active" id="shapeSquare" data-shape="square">
+            <div class="shape-preview" style="border-radius: 6px;"></div>
+            <div class="shape-label">しかくい</div>
+          </button>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div>
+        <div class="field-label" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0;">
+          スクロール
+          <label class="toggle">
+            <input type="checkbox" id="scrollToggle" checked>
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+        </div>
+        <div id="speedSection" style="margin-top:12px;">
+          <div class="speed-row">
+            <span class="speed-label-s">ゆっくり</span>
+            <input type="range" id="speedSlider" min="6" max="28" value="14" step="1">
+            <span class="speed-label-s">はやい</span>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div>
+        <div class="field-label">バーの幅　<span id="widthValue" style="font-weight:400; color:var(--muted); font-size:12px;">480px</span></div>
+        <div class="speed-row">
+          <span class="speed-label-s">せまい</span>
+          <input type="range" id="widthSlider" min="100" max="800" value="480" step="10">
+          <span class="speed-label-s">ひろい</span>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div>
+        <div class="field-label">文字サイズ　<span id="fontSizeValue" style="font-weight:400; color:var(--muted); font-size:12px;">13px</span></div>
+        <div class="speed-row">
+          <span class="speed-label-s">小さい</span>
+          <input type="range" id="fontSizeSlider" min="10" max="28" value="13" step="1">
+          <span class="speed-label-s">大きい</span>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div>
+        <div class="field-label">文字の太さ</div>
+        <div class="font-grid" id="weightGrid"></div>
+      </div>
+
+      <hr class="divider">
+
+      <div>
+        <div class="field-label" style="display:flex; align-items:center; justify-content:space-between;">
+          カラー
+          <button id="swapBtn" title="背景色とテキスト色を反転" style="
+            background: var(--surface2);
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            padding: 4px 10px;
+            font-size: 12px;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: 'Noto Sans JP', sans-serif;
+          ">⇄ 反転</button>
+        </div>
+        <div class="color-section" style="margin-top:11px;">
+          <div>
+            <div class="field-label" style="font-size:12px; margin-bottom:8px;">背景色</div>
+            <div class="preset-dots" id="bgDots"></div>
+            <div class="color-picker-row">
+              <input type="color" id="bgPicker" value="#ffffff">
+              <input type="text" id="bgText" value="#ffffff" maxlength="7">
+            </div>
+          </div>
+          <div>
+            <div class="field-label" style="font-size:12px; margin-bottom:8px;">テキスト / アイコン色</div>
+            <div class="preset-dots" id="fgDots"></div>
+            <div class="color-picker-row">
+              <input type="color" id="fgPicker" value="#1e1c19">
+              <input type="text" id="fgText" value="#1e1c19" maxlength="7">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="output-section">
+      <div class="output-label">ダウンロード</div>
+      <div class="output-box">
+        <button class="copy-btn" id="downloadBtn" style="width:100%; padding:12px; font-size:14px;">⬇ overlay.html をダウンロード</button>
+      </div>
+      <div style="margin-top:10px; font-size:12px; color:var(--muted); line-height:1.9;">
+        ① ダウンロードしたファイルをPC上の好きな場所に保存<br>
+        ② OBS → ソース追加 → ブラウザ → ローカルファイルにチェック → 指定
+      </div>
+    </div>
+
+  </div>
+  </div>
+
+</div>
+
+<script>
+const ICONS = [
+  { id: 'none',    label: 'なし',   svg: '' },
+  { id: 'music',   label: '音楽',   svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>` },
+  { id: 'mic',     label: 'マイク', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>` },
+  { id: 'radio',   label: 'ラジオ', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="20" height="14" rx="2"/><path d="M6 8l6-6 6 6"/><circle cx="12" cy="15" r="3"/><line x1="17" y1="11" x2="19" y2="11"/></svg>` },
+  { id: 'gamepad', label: 'ゲーム', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="12" rx="4"/><path d="M8 11v4M6 13h4"/><circle cx="16" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="14" r="1" fill="currentColor" stroke="none"/></svg>` },
+  { id: 'dice',    label: 'TRPG',   svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>` },
+  { id: 'star',    label: 'スター', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>` },
+  { id: 'heart',   label: 'ハート', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>` },
+  { id: 'chat',    label: 'トーク', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>` },
+  { id: 'hash',    label: 'ハッシュ', svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>` },
+];
+
+// 日本語 Google フォント（英字も自然に対応）
+const FONTS = [
+  { id: 'noto',       label: 'Noto Sans',       family: "'Noto Sans JP', sans-serif",          sample: 'あいう Abc' },
+  { id: 'bizdp',      label: 'BIZ UDP',          family: "'BIZ UDPGothic', sans-serif",         sample: 'あいう Abc' },
+  { id: 'zen',        label: 'Zen Kaku',         family: "'Zen Kaku Gothic New', sans-serif",   sample: 'あいう Abc' },
+  { id: 'mplus',      label: 'M PLUS Round',     family: "'M PLUS Rounded 1c', sans-serif",     sample: 'あいう Abc' },
+  { id: 'murecho',    label: 'Murecho',          family: "'Murecho', sans-serif",               sample: 'あいう Abc' },
+  { id: 'zenmaru',    label: 'Zen Maru',         family: "'Zen Maru Gothic', sans-serif",       sample: 'あいう Abc' },
+  { id: 'kaisei',     label: 'Kaisei Decol',     family: "'Kaisei Decol', serif",               sample: 'あいう Abc' },
+  { id: 'dotgothic',  label: 'Dot Gothic',       family: "'DotGothic16', sans-serif",           sample: 'あいう Abc' },
+];
+
+// 背景色プリセット：明るい系 → ダーク系の順
+const BG_PRESETS = [
+  '#ffffff', // 白
+  '#f5f5f5', // 薄グレー
+  '#1a1a1a', // ほぼ黒（ダーク定番）
+  '#111111', // 黒に近い
+  '#1e2130', // ダークネイビー
+  '#0f1a0f', // ダークグリーン
+  '#1a0f1a', // ダークパープル
+  '#f0ede8', // ベージュ
+];
+
+// テキスト・アイコン色プリセット：白・黒系 → アクセント系の順
+const FG_PRESETS = [
+  '#ffffff', // 白
+  '#f0f0f0', // オフホワイト
+  '#1e1c19', // ほぼ黒
+  '#4a7c6f', // グリーン（アクセント）
+  '#6b8cba', // ブルー
+  '#c9a98a', // ベージュゴールド
+  '#e8a0a0', // ピンク
+  '#a0c4ff', // ライトブルー
+];
+
+const state = {
+  text: 'Pothoa — driftwood',
+  icon: 'music',
+  font: 'noto',
+  speed: 14,
+  bg: '#ffffff',
+  fg: '#1e1c19',
+  shape: 'square',
+  width: 480,
+  scroll: true,
+  fontSize: 13,
+  fontWeight: 400,
+  previewBg: '#111111',
+  previewPos: 'bottom-left',
+};
+
+function updatePreview() {
+  const bar      = document.getElementById('overlayBar');
+  const iconEl   = document.getElementById('barIcon');
+  const wrapEl   = document.getElementById('barTextWrap');
+  const textEl   = document.getElementById('barText');
+
+  // フォントサイズ連動
+  const fs        = state.fontSize;
+  const barHeight = Math.max(44, Math.round(fs * 3.2));
+  const iconSize  = Math.round(fs * 1.4);
+
+  bar.style.height = barHeight + 'px';
+
+  // アイコンなし対応
+  if (state.icon === 'none') {
+    iconEl.style.display = 'none';
+    wrapEl.style.paddingLeft = '14px';
+  } else {
+    iconEl.style.display = 'flex';
+    iconEl.style.width   = barHeight + 'px';
+    iconEl.style.height  = barHeight + 'px';
+    wrapEl.style.paddingLeft = '';
+    iconEl.innerHTML = ICONS.find(i => i.id === state.icon)?.svg || ICONS[0].svg;
+    const svg = iconEl.querySelector('svg');
+    if (svg) { svg.style.width = iconSize + 'px'; svg.style.height = iconSize + 'px'; }
+  }
+
+  document.getElementById('fontSizeValue').textContent = fs + 'px';
+
+  // バー形状
+  const radius = state.shape === 'round' ? '100px' : '8px';
+  bar.style.borderRadius  = radius;
+  iconEl.style.borderRadius = state.shape === 'round' ? '100px 0 0 100px' : '8px 0 0 8px';
+
+  // バー幅
+  bar.style.width = state.width + 'px';
+  document.getElementById('widthValue').textContent = state.width + 'px';
+
+  // カラー
+  bar.style.background    = state.bg;
+  iconEl.style.background = state.bg;
+  iconEl.style.color      = state.fg;
+  wrapEl.style.background = state.bg;
+
+  // テキスト
+  textEl.textContent      = state.text || 'テキストを入力してください';
+  textEl.style.color      = state.fg;
+  textEl.style.fontFamily = FONTS.find(f => f.id === state.font)?.family || FONTS[0].family;
+  textEl.style.fontSize   = fs + 'px';
+  textEl.style.fontWeight = state.fontWeight;
+
+  // スクロール
+  const speedSec = (30 - state.speed + 6) + 's';
+  textEl.style.animation = 'none';
+  textEl.offsetHeight;
+  if (state.scroll) {
+    textEl.style.animation = `marquee ${speedSec} linear infinite`;
+    textEl.style.transform = '';
+  } else {
+    textEl.style.animation = 'none';
+    textEl.style.transform = 'translateX(0)';
+  }
+  document.getElementById('speedSection').style.display = state.scroll ? '' : 'none';
+
+  // 配信画面モック背景色
+  document.getElementById('streamMock').style.background = state.previewBg;
+
+  // 配信画面モック内でのスケールと位置
+  const wrap   = document.getElementById('streamOverlayWrap');
+  const mockEl = document.getElementById('streamMock');
+  const mockW  = mockEl.clientWidth || 600;
+  const mockH  = mockEl.clientHeight || 337;
+  const scale  = Math.min(1, (mockW * 0.6) / state.width);
+  wrap.style.transform       = `scale(${scale})`;
+
+  const pad = Math.round(mockW * 0.04);
+  const pos = state.previewPos;
+  wrap.style.left   = (pos === 'top-left'  || pos === 'bottom-left')  ? pad + 'px' : 'auto';
+  wrap.style.right  = (pos === 'top-right' || pos === 'bottom-right') ? pad + 'px' : 'auto';
+  wrap.style.top    = (pos === 'top-left'  || pos === 'top-right')    ? Math.round(mockH * 0.08) + 'px' : 'auto';
+  wrap.style.bottom = (pos === 'bottom-left' || pos === 'bottom-right') ? Math.round(mockH * 0.12) + 'px' : 'auto';
+  wrap.style.transformOrigin =
+    pos === 'top-left'     ? 'left top'    :
+    pos === 'top-right'    ? 'right top'   :
+    pos === 'bottom-right' ? 'right bottom': 'left bottom';
+
+  updateHTML();
+}
+
+function generateHTML() {
+  const speedSec   = (30 - state.speed + 6) + 's';
+  const radius     = state.shape === 'round' ? '100px' : '8px';
+  const iconR      = state.shape === 'round' ? '100px 0 0 100px' : '8px 0 0 8px';
+  const fontFamily = FONTS.find(f => f.id === state.font)?.family || FONTS[0].family;
+  const iconSvg    = ICONS.find(i => i.id === state.icon)?.svg || ICONS[1].svg;
+  const iconBlock  = state.icon === 'none' ? '' : `  <div class="icon-pill">${iconSvg}</div>`;
+  const iconPillCSS = state.icon === 'none' ? '' : `
+.icon-pill {
+  width: ${barHeight}px; height: ${barHeight}px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: ${state.bg};
+  color: ${state.fg};
+  border-radius: ${iconR};
+}
+.icon-pill svg { width: ${iconSize}px; height: ${iconSize}px; }`;
+  const animStyle  = state.scroll
+    ? `animation: marquee ${speedSec} linear infinite;`
+    : `animation: none; transform: translateX(0);`;
+  const fs         = state.fontSize;
+  const barHeight  = Math.max(44, Math.round(fs * 3.2));
+  const iconSize   = Math.round(fs * 1.4);
+
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Scrolly Overlay</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=BIZ+UDPGothic&family=Zen+Kaku+Gothic+New:wght@400;500&family=M+PLUS+Rounded+1c:wght@400;500&family=Murecho:wght@300;400&family=Zen+Maru+Gothic:wght@400;500&family=Kaisei+Decol:wght@400;500&family=DotGothic16&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: transparent; overflow: hidden; width: 100%; height: 100%; }
+.bar {
+  display: inline-flex;
+  align-items: center;
+  height: ${barHeight}px;
+  width: ${state.width}px;
+  border-radius: ${radius};
+  overflow: hidden;
+  background: ${state.bg};
+}${iconPillCSS}
+.text-track {
+  flex: 1; overflow: hidden; height: 100%;
+  display: flex; align-items: center;
+  padding: 0 16px 0 ${state.icon === 'none' ? '14' : '8'}px;
+  background: ${state.bg};
+}
+.scrolling-text {
+  white-space: nowrap;
+  display: inline-block;
+  font-size: ${fs}px;
+  font-weight: ${state.fontWeight};
+  letter-spacing: 0.04em;
+  color: ${state.fg};
+  font-family: ${fontFamily};
+  ${animStyle}
+}
+@keyframes marquee {
+  0%   { transform: translateX(${state.width}px); }
+  100% { transform: translateX(-100%); }
+}
+</style>
+</head>
+<body>
+<div class="bar">
+${iconBlock}
+  <div class="text-track">
+    <span class="scrolling-text">${state.text || 'Now Playing'}</span>
+  </div>
+</div>
+</body>
+</html>`;
+}
+
+function updateHTML() {
+  const barHeight = Math.max(44, Math.round(state.fontSize * 3.2));
+  const obsWidthEl = document.getElementById('obsWidth');
+  const obsHeightEl = document.getElementById('obsHeight');
+  if (obsWidthEl) obsWidthEl.textContent = state.width;
+  if (obsHeightEl) obsHeightEl.textContent = barHeight;
+}
+
+function buildIcons() {
+  const grid = document.getElementById('iconGrid');
+  ICONS.forEach(ic => {
+    const btn = document.createElement('button');
+    btn.className = 'icon-btn' + (ic.id === state.icon ? ' active' : '');
+    if (ic.id === 'none') {
+      btn.classList.add('no-icon');
+      btn.textContent = 'なし';
+    } else {
+      btn.innerHTML = ic.svg;
+    }
+    btn.title = ic.label;
+    btn.addEventListener('click', () => {
+      state.icon = ic.id;
+      document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updatePreview();
+    });
+    grid.appendChild(btn);
+  });
+}
+
+function buildFonts() {
+  const grid = document.getElementById('fontGrid');
+  FONTS.forEach(f => {
+    const btn = document.createElement('button');
+    btn.className = 'font-btn' + (f.id === state.font ? ' active' : '');
+    btn.style.fontFamily = f.family;
+    btn.textContent = f.label;
+    btn.title = f.sample;
+    btn.addEventListener('click', () => {
+      state.font = f.id;
+      document.querySelectorAll('.font-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updatePreview();
+    });
+    grid.appendChild(btn);
+  });
+}
+
+function buildWeights() {
+  const weights = [
+    { value: 300, label: 'Light' },
+    { value: 400, label: 'Regular' },
+    { value: 500, label: 'Medium' },
+    { value: 700, label: 'Bold' },
+  ];
+  const grid = document.getElementById('weightGrid');
+  weights.forEach(w => {
+    const btn = document.createElement('button');
+    btn.className = 'font-btn' + (w.value === state.fontWeight ? ' active' : '');
+    btn.textContent = w.label;
+    btn.style.fontWeight = w.value;
+    btn.addEventListener('click', () => {
+      state.fontWeight = w.value;
+      document.querySelectorAll('#weightGrid .font-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updatePreview();
+    });
+    grid.appendChild(btn);
+  });
+}
+
+function buildDots(id, presets, key) {
+  const container = document.getElementById(id);
+  presets.forEach(color => {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (state[key] === color ? ' active' : '');
+    dot.style.background = color;
+    if (color === '#ffffff') dot.style.outline = '1px solid #ccc';
+    dot.addEventListener('click', () => {
+      state[key] = color;
+      syncColor(key);
+      container.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+      dot.classList.add('active');
+      updatePreview();
+    });
+    container.appendChild(dot);
+  });
+}
+
+function syncColor(key) {
+  if (key === 'bg') {
+    document.getElementById('bgPicker').value = state.bg;
+    document.getElementById('bgText').value   = state.bg;
+  } else {
+    document.getElementById('fgPicker').value = state.fg;
+    document.getElementById('fgText').value   = state.fg;
+  }
+}
+
+function attachColorEvents(pickerId, textId, key, dotsId) {
+  document.getElementById(pickerId).addEventListener('input', e => {
+    state[key] = e.target.value;
+    document.getElementById(textId).value = e.target.value;
+    document.querySelectorAll(`#${dotsId} .dot`).forEach(d => d.classList.remove('active'));
+    updatePreview();
+  });
+  document.getElementById(textId).addEventListener('input', e => {
+    const v = e.target.value;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+      state[key] = v;
+      document.getElementById(pickerId).value = v;
+      document.querySelectorAll(`#${dotsId} .dot`).forEach(d => d.classList.remove('active'));
+      updatePreview();
+    }
+  });
+}
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const html = generateHTML();
+  const blob = new Blob([html], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'scrolly-overlay.html';
+  a.click();
+  URL.revokeObjectURL(url);
+
+  const btn = document.getElementById('downloadBtn');
+  btn.textContent = '✓ ダウンロードしました';
+  btn.classList.add('copied');
+  setTimeout(() => {
+    btn.textContent = '⬇ overlay.html をダウンロード';
+    btn.classList.remove('copied');
+  }, 2000);
+});
+
+function init() {
+  buildIcons();
+  buildFonts();
+  buildWeights();
+  buildDots('bgDots', BG_PRESETS, 'bg');
+  buildDots('fgDots', FG_PRESETS, 'fg');
+
+  document.getElementById('textInput').addEventListener('input', e => {
+    state.text = e.target.value;
+    updatePreview();
+  });
+
+  document.getElementById('speedSlider').addEventListener('input', e => {
+    state.speed = parseInt(e.target.value);
+    updatePreview();
+  });
+
+  document.getElementById('widthSlider').addEventListener('input', e => {
+    state.width = parseInt(e.target.value);
+    updatePreview();
+  });
+
+  document.getElementById('fontSizeSlider').addEventListener('input', e => {
+    state.fontSize = parseInt(e.target.value);
+    updatePreview();
+  });
+
+  // スクロールトグル
+  document.getElementById('scrollToggle').addEventListener('change', e => {
+    state.scroll = e.target.checked;
+    updatePreview();
+  });
+
+  // 色反転
+  document.getElementById('swapBtn').addEventListener('click', () => {
+    [state.bg, state.fg] = [state.fg, state.bg];
+    syncColor('bg');
+    syncColor('fg');
+    document.querySelectorAll('#bgDots .dot').forEach(d => d.classList.remove('active'));
+    document.querySelectorAll('#fgDots .dot').forEach(d => d.classList.remove('active'));
+    updatePreview();
+  });
+
+  // プレビュー背景色
+  document.querySelectorAll('.preview-bg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.previewBg = btn.dataset.bg;
+      document.querySelectorAll('.preview-bg-btn').forEach(b => b.style.border = '2px solid transparent');
+      btn.style.border = '2px solid var(--text)';
+      updatePreview();
+    });
+  });
+
+  // プレビュー位置
+  document.querySelectorAll('.pos-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.previewPos = btn.dataset.pos;
+      document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updatePreview();
+    });
+  });
+
+  // バー形状
+  document.querySelectorAll('.shape-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.shape = btn.dataset.shape;
+      document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updatePreview();
+    });
+  });
+
+  attachColorEvents('bgPicker', 'bgText', 'bg', 'bgDots');
+  attachColorEvents('fgPicker', 'fgText', 'fg', 'fgDots');
+
+  updatePreview();
+}
+
+init();
+</script>
+</body>
+</html>
