@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scrolly Glass Dock</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=BIZ+UDPGothic&family=Zen+Kaku+Gothic+New:wght@400;500&family=M+PLUS+Rounded+1c:wght@400;500&family=Murecho:wght@300;400&family=Kaisei+Decol:wght@400;500&family=DotGothic16&family=Zen+Maru+Gothic:wght@400;500&display=swap');
+
+*,:before,:after{box-sizing:border-box} body{margin:0;padding:12px;min-height:0;background:var(--fw-bg);color:var(--fw-text);font:14px/1.6 "Yu Gothic UI","Hiragino Sans",Meiryo,system-ui,sans-serif}
+:root{color-scheme:dark;--fw-bg:#1c1d1f;--fw-surface:#252629;--fw-field:#303135;--fw-text:#eceef1;--fw-muted:#b5b9c1;--fw-line:#44464b;--fw-control-line:#7e8189;--fw-selection:#3d4148;--fw-focus:#bcc5d3;--fw-success:#a8cbb4;--fw-warning:#dfcca0;--fw-danger:#eeaaa7;--muted:var(--fw-muted)}
+button,input,select{font:inherit;color:inherit;min-width:0}button,summary,input[type=range],input[type=color]{cursor:pointer}button{min-height:34px;background:var(--fw-field);border:1px solid var(--fw-control-line);border-radius:8px;padding:6px 10px}button:hover{background:var(--fw-selection)}:focus-visible{outline:2px solid var(--fw-focus);outline-offset:2px}h1{font-size:18px;line-height:1.4;margin:0 0 12px}h2{font-size:14px;margin:0 0 12px;font-weight:700}p{margin:0} [hidden]{display:none!important}
+.card,.conn-box,.preview-card{background:var(--fw-surface);border:1px solid var(--fw-line);border-radius:10px;padding:10px;margin:0 0 16px;min-width:0}.section{margin-bottom:12px;min-width:0}.section:last-child{margin-bottom:0}.field-label{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:14px;font-weight:600;margin-bottom:8px}.status-bar{display:flex;align-items:center;gap:8px;margin:0 0 8px}.status-dot{width:8px;height:8px;border-radius:50%;background:var(--fw-muted);flex-shrink:0}.status-dot.connected{background:var(--fw-success)}.status-dot.error{background:var(--fw-danger)}.status-dot.connecting{background:var(--fw-warning)}.status-text,.conn-hint,.size-hint,.overlay-status,.save-error{font-size:12px;overflow-wrap:anywhere;color:var(--fw-muted)}.overlay-status,.save-error{margin-bottom:12px}.overlay-status:empty{display:none}.overlay-status.warn{color:var(--fw-warning)}.save-error{color:var(--fw-danger)}summary{font-weight:600;min-height:32px}.conn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:12px}.conn-field{display:flex;flex-direction:column;gap:4px;flex:1 1 110px;min-width:0;font-size:12px}.text-input,.conn-field input,.conn-url,.color-picker-row input[type=text]{width:100%;min-height:34px;border:1px solid var(--fw-control-line);border-radius:8px;padding:6px 8px;background:var(--fw-field)}.conn-hint{margin-top:8px}.conn-sub{font-size:14px;font-weight:600;margin-top:12px}.conn-url{margin-top:8px}.preview-wrap{display:flex;align-items:center;justify-content:flex-start;background:#111;border-radius:6px;padding:14px 10px;min-height:72px;overflow:hidden;margin:8px 0}.size-hint{margin-top:8px}
+.icon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:8px}.icon-btn{height:36px;padding:6px;display:flex;align-items:center;justify-content:center}.icon-btn svg{width:18px;height:18px}.no-icon{font-size:12px}.font-grid{display:flex;flex-wrap:wrap;gap:8px}.font-btn{max-width:100%;overflow-wrap:anywhere;text-align:left}.active{background:var(--fw-selection);border-color:var(--fw-focus);box-shadow:inset 0 -2px var(--fw-focus)}.slider-row{display:flex;align-items:center;gap:8px}.slider-label{font-size:12px;white-space:nowrap}input[type=range]{flex:1;min-width:0;width:100%;height:34px;appearance:none;background:transparent}input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--fw-control-line)}input[type=range]::-webkit-slider-thumb{appearance:none;width:18px;height:18px;margin-top:-6px;border-radius:50%;background:var(--fw-focus)}.shape-grid{display:flex;gap:8px}.shape-btn{flex:1;min-width:0;display:flex;align-items:center;flex-direction:column;gap:6px}.shape-preview{width:60px;max-width:100%;height:12px;background:var(--fw-muted)}.shape-label-s{font-size:12px}
+.toggle{position:relative;display:inline-flex;align-items:center;min-height:32px}.toggle input{position:absolute;opacity:0;width:44px;height:24px;margin:0}.toggle-track{width:44px;height:24px;background:var(--fw-control-line);border-radius:999px;position:relative;pointer-events:none}.toggle-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;background:var(--fw-bg);border-radius:50%;transition:transform .15s}.toggle input:checked+.toggle-track{background:var(--fw-focus)}.toggle input:checked+.toggle-track .toggle-thumb{transform:translateX(20px)}.toggle input:focus-visible+.toggle-track{outline:2px solid var(--fw-focus);outline-offset:2px}.color-row-inner{display:flex;flex-wrap:wrap;gap:8px}.dot{width:28px;min-height:28px;height:28px;padding:0;border-radius:6px;border:1px solid var(--fw-control-line)}.dot.active{outline:2px solid var(--fw-focus);outline-offset:2px;box-shadow:none}.color-picker-row{display:flex;align-items:center;gap:8px}.color-picker-row input[type=color]{width:44px;height:34px;flex-shrink:0;background:var(--fw-field);border:1px solid var(--fw-control-line);border-radius:6px;padding:2px}.color-picker-row input[type=text]{flex:1;min-width:0;font-family:monospace}.swap-btn{width:100%;margin-top:4px}.divider{display:none} .value-note{font-size:12px;color:var(--fw-muted);margin-top:4px}
+.overlay-bar {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  max-width: 100%;
+}
+.bar-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.bar-icon svg { width: 17px; height: 17px; }
+.bar-text-wrap { flex: 1; overflow: hidden; height: 100%; display: flex; align-items: center; padding: 0 14px 0 8px; }
+.bar-text { white-space: nowrap; display: inline-block; font-size: 13px; letter-spacing: 0.04em; animation: marquee 14s linear infinite; }
+@keyframes marquee { 0% { transform: translateX(260px); } 100% { transform: translateX(-100%); } }
+
+
+.overlay-bar{flex-shrink:0;max-width:none}
+
+</style>
+<script src="scrolly-shared.js"></script>
+</head>
+<body>
+
+
+<div hidden id="editorHidden"><!-- 接続状態 -->
+<div class="status-bar">
+  <div class="status-dot" id="statusDot"></div>
+  <div class="status-text" id="statusText" role="status">OBSへ接続しています…</div>
+</div>
+
+<details class="conn-box" id="connBox" open>
+  <summary>OBSとの接続</summary>
+  <div class="conn-row">
+    <label class="conn-field">ポート<input id="obsPort" type="number" min="1" max="65535" value="4455"></label>
+    <label class="conn-field">接続パスワード<input id="obsPass" type="password" autocomplete="off"></label>
+    <button id="obsConnect" type="button" class="conn-btn">接続</button>
+  </div>
+  <p class="conn-hint">OBSの「ツール → WebSocketサーバー設定 → 接続情報を表示」のポートとパスワードを入れます。認証を使っていない場合、パスワードは空のままです。パスワードは保存しません。</p>
+  <div class="conn-sub">表示ソース用のURL</div>
+  <button id="urlMake" type="button" class="conn-btn" style="margin-top:6px;">URLを作る</button>
+  <input id="sourceUrl" class="conn-url" type="text" readonly aria-label="表示ソース用のURL">
+  <p class="conn-hint">このURLを、ブラウザソースの「URL」に貼り付けます（「ローカルファイル」はオフ）。URLには接続パスワードが含まれます。配信画面には映りませんが、人に見せたりスクリーンショットに入れたりしないでください。</p>
+</details>
+<p class="overlay-status" id="overlayStatus" role="status"></p>
+
+
+<details class="preview-card" open><summary>プレビュー</summary>
+<div class="preview-wrap">
+  <div id="previewScale"><div class="overlay-bar" id="previewBar">
+    <div class="bar-icon" id="previewIcon"></div>
+    <div class="bar-text-wrap" id="previewTextWrap">
+      <span class="bar-text" id="previewText"></span>
+    </div>
+  </div>
+</div>
+</div></details>
+<p class="size-hint" id="sizeHint" style="margin-bottom:16px"></p>
+
+</div>
+<p class="save-error" id="saveError" role="alert" hidden></p>
+<section class="card"><h2>表示内容</h2>
+<div class="section">
+  <div class="field-label">テキスト</div>
+  <input class="text-input" type="text" id="textInput" aria-label="テキスト" placeholder="表示するテキストを入力">
+</div>
+<div class="section">
+  <div class="field-label">アイコン</div>
+  <div class="icon-grid" id="iconGrid"></div>
+</div>
+<div class="section">
+  <div class="field-label">
+    スクロール
+    <label class="toggle">
+      <input type="checkbox" id="scrollToggle" role="switch" aria-label="スクロール" checked>
+      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+    </label>
+  </div>
+  <div id="speedSection"><p class="value-note" id="speedValue"></p>
+    <div class="slider-row">
+      <span class="slider-label">ゆっくり</span>
+      <input type="range" id="speedSlider" aria-label="スクロールの速さ" min="6" max="28" value="14" step="1">
+      <span class="slider-label">はやい</span>
+    </div>
+  </div>
+</div></section>
+<section class="card"><h2>大きさ</h2>
+<div class="section">
+  <div class="field-label">バーの幅　<span id="widthVal" style="font-weight:400; color:var(--muted);">480px</span></div>
+  <div class="slider-row">
+    <span class="slider-label">せまい</span>
+    <input type="range" id="widthSlider" aria-label="バーの幅（px）" min="100" max="800" value="480" step="10">
+    <span class="slider-label">ひろい</span>
+  </div>
+</div>
+<div class="section">
+  <div class="field-label">文字サイズ　<span id="fontSizeVal" style="font-weight:400; color:var(--muted);">13px</span></div>
+  <div class="slider-row">
+    <span class="slider-label">小さい</span>
+    <input type="range" id="fontSizeSlider" aria-label="文字サイズ（px）" min="10" max="28" value="13" step="1">
+    <span class="slider-label">大きい</span>
+  </div>
+</div></section>
+<section class="card"><h2>文字</h2>
+<div class="section">
+  <div class="field-label">フォント</div>
+  <div class="font-grid" id="fontGrid"></div>
+</div>
+<div class="section">
+  <div class="field-label">文字の太さ</div>
+  <div class="font-grid" id="weightGrid"></div>
+</div></section>
+<section class="card"><h2>デザイン</h2>
+<div class="section"><div class="field-label">ガラスの配色</div><div class="font-grid" id="themeGrid"></div></div>
+<div class="section"><label class="field-label" for="bgAlphaSlider">ガラスの濃さ <span id="bgAlphaVal">18%</span></label><input type="range" id="bgAlphaSlider" min="0" max="80" step="1" value="18"></div>
+<div class="section"><label class="field-label" for="bdAlphaSlider">枠線の濃さ <span id="bdAlphaVal">30%</span></label><input type="range" id="bdAlphaSlider" min="0" max="80" step="1" value="30"></div>
+<div class="section">
+  <label class="field-label" for="cornerSlider">角の丸み</label>
+  <div class="slider-row"><input id="cornerSlider" type="range" min="0" max="100" step="0.01" aria-label="角の丸み"><input id="cornerNumber" type="number" min="0" max="100" step="0.01" aria-label="角の丸み（%）" style="width:80px">%</div>
+</div>
+<div class="section">
+  <div class="field-label">ガラス色</div>
+  <div class="color-row-inner" id="bgDots"></div>
+  <div class="color-picker-row" style="margin-top:7px;">
+    <input type="color" id="bgPicker" aria-label="ガラス色" value="#ffffff">
+    <input type="text" id="bgText" aria-label="ガラス色のカラーコード" value="#ffffff" maxlength="7">
+  </div>
+</div>
+<div class="section">
+  <div class="field-label">テキスト / アイコン色</div>
+  <div class="color-row-inner" id="fgDots"></div>
+  <div class="color-picker-row" style="margin-top:7px;">
+    <input type="color" id="fgPicker" aria-label="テキスト / アイコン色" value="#1e1c19">
+    <input type="text" id="fgText" aria-label="テキスト / アイコン色のカラーコード" value="#1e1c19" maxlength="7">
+  </div>
+</div><button class="swap-btn" id="swapBtn">⇄ ガラス色とテキスト色を反転</button></section>
+
+
+
+<script>
+const ICONS_LIST = window.SCROLLY.ICONS;
+const FONTS_LIST = window.SCROLLY.FONTS;
+
+const THEMES = [
+  { label:'Pearl',  tintR:255, tintG:255, tintB:255, tintHex:'#ffffff', fg:'#ffffff', fgLabel:'白' },
+  { label:'Ocean',  tintR:58,  tintG:173, tintB:207, tintHex:'#3aadcf', fg:'#c8f0ff', fgLabel:'水' },
+  { label:'Violet', tintR:160, tintG:140, tintB:255, tintHex:'#a08cff', fg:'#e8e0ff', fgLabel:'紫' },
+  { label:'Mint',   tintR:80,  tintG:220, tintB:180, tintHex:'#50dcb4', fg:'#c0fff0', fgLabel:'緑' },
+  { label:'Amber',  tintR:255, tintG:170, tintB:80,  tintHex:'#ffaa50', fg:'#fff0c8', fgLabel:'橙' },
+  { label:'Sakura', tintR:255, tintG:130, tintB:170, tintHex:'#ff82aa', fg:'#ffe0ee', fgLabel:'桃' },
+];
+
+const COLOR_PRESETS = ['#ffffff', '#f3f0e9', '#d6d3cd', '#96999e', '#34373d', '#17191d', '#dce7f2', '#718ba8', '#dfe9df', '#7e9988', '#e7e1f0', '#9a8bae', '#f1dfe1', '#b58790'];
+const BG_PRESETS = COLOR_PRESETS;
+const FG_PRESETS = COLOR_PRESETS;
+
+const state = {
+  text: '', icon: 'music', font: 'noto',
+  shape: 'square', scroll: true, speed: 14,
+  width: 480, fontSize: 13, fontWeight: 400,
+  bg: '#ffffff', fg: '#ffffff',
+  glassBgAlpha: 0.18, glassBdAlpha: 0.30, glassTintR:255, glassTintG:255, glassTintB:255,
+};
+
+const KEY = 'scrolly_free_glass_v1';
+const CONN_KEY = 'scrolly_free_glass_conn';
+
+/* 保存した設定を読む。項目ごとに型と範囲を確かめ、合わないものだけ初期値のまま残す。 */
+function loadState() {
+  let raw = null;
+  try { raw = JSON.parse(localStorage.getItem(KEY)); } catch (e) { raw = null; }
+  if (!raw || typeof raw !== 'object') return;
+  const hex = v => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
+  const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+  if (typeof raw.text === 'string') state.text = raw.text.slice(0, 1000);
+  if (ICONS_LIST.some(i => i.id === raw.icon)) state.icon = raw.icon;
+  if (FONTS_LIST.some(f => f.id === raw.font)) state.font = raw.font;
+  if (raw.shape === 'round' || raw.shape === 'square') state.shape = raw.shape;
+  if (typeof raw.cornerPct === 'number' && Number.isFinite(raw.cornerPct) && raw.cornerPct>=0 && raw.cornerPct<=100) state.cornerPct=raw.cornerPct;
+  if (typeof raw.scroll === 'boolean') state.scroll = raw.scroll;
+  if (int(raw.speed, 6, 28)) state.speed = raw.speed;
+  if (int(raw.width, 100, 800)) state.width = raw.width;
+  if (int(raw.fontSize, 10, 28)) state.fontSize = raw.fontSize;
+  if ([300, 400, 500, 700].includes(raw.fontWeight)) state.fontWeight = raw.fontWeight;
+  if (hex(raw.bg)) state.bg = raw.bg;
+  if (hex(raw.fg)) state.fg = raw.fg;
+  for (const key of ['glassBgAlpha','glassBdAlpha']) if (typeof raw[key] === 'number' && Number.isFinite(raw[key]) && raw[key]>=0 && raw[key]<=0.8) state[key]=raw[key];
+  for (const key of ['glassTintR','glassTintG','glassTintB']) if (int(raw[key],0,255)) state[key]=raw[key];
+  state.bg = tintHex();
+}
+function saveState() {
+  const el = document.getElementById('saveError');
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+    el.hidden = true;
+  } catch (e) {
+    el.textContent = '設定を保存できませんでした。今の設定は配信画面に送っていますが、Dockを開き直すと元に戻ります。';
+    el.hidden = false;
+  }
+}
+function loadPort() {
+  try { const v = JSON.parse(localStorage.getItem(CONN_KEY)); if (v && Number.isInteger(v.port)) return v.port; } catch (e) {}
+  return 4455;
+}
+function savePort(port) {
+  try { localStorage.setItem(CONN_KEY, JSON.stringify({ port })); } catch (e) {}
+}
+
+let bridge = null;
+let sendTimer = null;
+let ackTimer = null;
+
+// ── OBSとの接続 ─────────────────────────────
+/* OBSBridge：認証オンで接続できる。ポート指定可。認証失敗では再試行を止める。
+   パスワードは保存しない。 */
+let lastStatus = '';
+function setStatus(type, text) {
+  const cls = type === 'connected' ? 'connected'
+            : type === 'connecting' ? 'connecting' : 'error';
+  document.getElementById('statusDot').className = 'status-dot ' + cls;
+  document.getElementById('statusText').textContent = text;
+  /* 認証なしでつながったら接続の欄は畳む（URLを作る必要がない）。
+     パスワードを使っているときは、URLを作れるよう開いたままにする。
+     つながらない理由があるときは開く。 */
+  const box = document.getElementById('connBox');
+  if (type === 'connected' && lastStatus !== 'connected' && !document.getElementById('obsPass').value) box.open = false;
+  if (type === 'needpass' || type === 'authfail' || type === 'config') box.open = true;
+  lastStatus = type;
+}
+
+function setOverlayStatus(text, warn) {
+  const el = document.getElementById('overlayStatus');
+  el.textContent = text;
+  el.classList.toggle('warn', !!warn);
+}
+
+function connectOBS() {
+  const port = parseInt(document.getElementById('obsPort').value, 10);
+  const password = document.getElementById('obsPass').value;
+  if (bridge) bridge.close();
+  clearTimeout(ackTimer);
+  if (Number.isInteger(port)) savePort(port);
+  setOverlayStatus('');
+  bridge = new OBSBridge({
+    port, password,
+    onStatus: setStatus,
+    onReady: () => sendSettings(),
+    onEvent: data => {
+      if (data && data.scrollyGlassAck === true) {
+        clearTimeout(ackTimer);
+        const t = new Date().toLocaleTimeString('ja-JP', { hour12: false });
+        setOverlayStatus('配信画面に反映しました（' + t + '）');
+      }
+    }
+  });
+}
+
+function sendSettings() {
+  parent.postMessage({type:'scrolly-state',product:"glass",state:{...state}},location.protocol==='file:'?'*':location.origin);
+}
+
+// ── プレビュー更新 ─────────────────────────────
+function updatePreview() {
+  state.glassTintR=parseInt(state.bg.slice(1,3),16);state.glassTintG=parseInt(state.bg.slice(3,5),16);state.glassTintB=parseInt(state.bg.slice(5,7),16);
+  for(const [id,key] of [['bgAlpha','glassBgAlpha'],['bdAlpha','glassBdAlpha']]) {
+    document.getElementById(id+'Slider').value=Math.round(state[key]*100);
+    document.getElementById(id+'Val').textContent=Math.round(state[key]*100)+'%';
+  }
+  document.querySelectorAll('#themeGrid button').forEach((el,i)=>{const t=THEMES[i];el.classList.toggle('active',state.bg.toLowerCase()===t.tintHex&&state.fg.toLowerCase()===t.fg);});
+
+  document.querySelectorAll('.icon-btn,.font-btn,.shape-btn,.dot').forEach(el => el.setAttribute('aria-pressed', String(el.classList.contains('active'))));
+  document.getElementById('scrollToggle').setAttribute('aria-checked', String(state.scroll));
+  document.getElementById('speedSlider').setAttribute('aria-valuetext', String(state.speed));
+  document.getElementById('speedValue').textContent = '速さ ' + state.speed;
+
+  const bar    = document.getElementById('previewBar');
+  const iconEl = document.getElementById('previewIcon');
+  const wrapEl = document.getElementById('previewTextWrap');
+  const textEl = document.getElementById('previewText');
+
+  const fs        = state.fontSize;
+  const barHeight = Math.max(44, Math.round(fs * 3.2));
+  const iconSize  = Math.round(fs * 1.4);
+  const radius = window.SCROLLY.radius(state,barHeight);
+  const { glassTintR:r, glassTintG:g, glassTintB:b } = state;
+
+  /* ドック追加直後はレイアウト未確定でclientWidth=0のことがある。
+     その場合は少し待ってリトライ（負のスケール防止） */
+  const areaW = document.querySelector('.preview-wrap').clientWidth;
+  // Collapsed preview does not interrupt saving or sending.
+
+  const maxW  = areaW - 24;
+  const scale = Math.max(0.05, Math.min(1, maxW / state.width));
+
+  const topA = Math.min(1, state.glassBgAlpha * 1.25);
+  const botA = state.glassBgAlpha * 0.85;
+
+  /* ラッパーにスケール後の実寸を持たせる（flexの中央揃えがズレない） */
+  const scaleWrap = document.getElementById('previewScale');
+  scaleWrap.style.width    = Math.round(state.width * scale) + 'px';
+  scaleWrap.style.height   = Math.round(barHeight * scale) + 'px';
+  scaleWrap.style.overflow = 'visible';
+
+  bar.style.cssText = `
+    transform: scale(${scale}); transform-origin: top left;
+    width: ${state.width}px; height: ${barHeight}px; border-radius: ${radius};
+    background:
+      linear-gradient(115deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0) 55%, rgba(255,255,255,0.04) 100%),
+      linear-gradient(180deg,
+        rgba(${Math.min(255,r+25)},${Math.min(255,g+25)},${Math.min(255,b+25)},${topA}) 0%,
+        rgba(${r},${g},${b},${state.glassBgAlpha}) 45%,
+        rgba(${Math.max(0,r-15)},${Math.max(0,g-15)},${Math.max(0,b-15)},${botA}) 100%);
+    display: flex; align-items: center; overflow: hidden;
+    border: 1px solid rgba(${r},${g},${b},${state.glassBdAlpha});
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.40),
+      inset 0 -1px 0 rgba(0,0,0,0.10),
+      inset 0 0 18px rgba(255,255,255,0.04),
+      0 6px 20px rgba(0,0,0,0.4);
+  `;
+  /* dockプレビューはOBS外なのでbackdrop-filterが効く環境もあるが、
+     オーバーレイ実機と見た目を揃えるためグラデ表現で統一 */
+
+  if (state.icon === 'none') {
+    iconEl.style.display = 'none';
+    wrapEl.style.paddingLeft = '14px';
+  } else {
+    iconEl.style.cssText = `
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+      width:${barHeight}px; height:${barHeight}px;
+      background:transparent; color:${state.fg};
+      border-radius: ${radius} 0 0 ${radius};
+    `;
+    iconEl.innerHTML = ICONS_LIST.find(i => i.id === state.icon)?.svg || '';
+    const svg = iconEl.querySelector('svg');
+    if (svg) { svg.style.width = iconSize+'px'; svg.style.height = iconSize+'px'; }
+    wrapEl.style.paddingLeft = '8px';
+  }
+  wrapEl.style.cssText += 'background:transparent; padding-right:14px;';
+  textEl.textContent   = state.text || 'テキストを入力';
+  textEl.style.color   = state.fg;
+  textEl.style.textShadow = '0 1px 2px rgba(0,0,0,0.45), 0 2px 10px rgba(0,0,0,0.30)';
+  textEl.style.fontFamily = FONTS_LIST.find(f => f.id === state.font)?.family || FONTS_LIST[0].family;
+  textEl.style.fontSize   = fs + 'px';
+  textEl.style.fontWeight = state.fontWeight;
+
+  const speedSec = (30 - state.speed + 6) + 's';
+  textEl.style.animation = 'none';
+  textEl.offsetHeight;
+  if (state.scroll) textEl.style.animation = `marquee ${speedSec} linear infinite`;
+
+  document.getElementById('speedSection').style.display = state.scroll ? '' : 'none';
+  document.getElementById('widthVal').textContent    = state.width + 'px';
+  document.getElementById('fontSizeVal').textContent = state.fontSize + 'px';
+  document.getElementById('sizeHint').textContent =
+    'ブラウザソースの大きさ：幅 ' + state.width + ' × 高さ ' + barHeight;
+
+  saveState();
+  sendSettings();
+}
+
+// ── UI構築 ────────────────────────────────────
+function buildIcons() {
+  const grid = document.getElementById('iconGrid');
+  ICONS_LIST.forEach(ic => {
+    const btn = document.createElement('button');
+    btn.className = 'icon-btn' + (ic.id === state.icon ? ' active' : '');
+    if (ic.id === 'none') { btn.classList.add('no-icon'); btn.textContent = 'なし'; }
+    else btn.innerHTML = ic.svg;
+    btn.title = ic.label; btn.setAttribute("aria-label", ic.label);
+    btn.addEventListener('click', () => {
+      state.icon = ic.id;
+      document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updatePreview();
+    });
+    grid.appendChild(btn);
+  });
+}
+
+function buildFonts() {
+  const grid = document.getElementById('fontGrid');
+  FONTS_LIST.forEach(f => {
+    const btn = document.createElement('button');
+    btn.className = 'font-btn' + (f.id === state.font ? ' active' : '');
+
+    btn.textContent = f.label;
+    btn.addEventListener('click', () => {
+      state.font = f.id;
+      document.querySelectorAll('#fontGrid .font-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updatePreview();
+    });
+    grid.appendChild(btn);
+  });
+}
+
+function buildWeights() {
+  const weights = [{ v:300,l:'Light' },{ v:400,l:'Regular' },{ v:500,l:'Medium' },{ v:700,l:'Bold' }];
+  const grid = document.getElementById('weightGrid');
+  weights.forEach(w => {
+    const btn = document.createElement('button');
+    btn.className = 'font-btn' + (w.v === state.fontWeight ? ' active' : '');
+    btn.style.fontWeight = w.v;
+    btn.textContent = w.l;
+    btn.addEventListener('click', () => {
+      state.fontWeight = w.v;
+      document.querySelectorAll('#weightGrid .font-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updatePreview();
+    });
+    grid.appendChild(btn);
+  });
+}
+
+function buildDots(id, presets, key) {
+  const container = document.getElementById(id);
+  presets.forEach(color => {
+    const dot = document.createElement('button');
+    dot.type = 'button'; dot.setAttribute('aria-label', (key === 'bg' ? '背景色 ' : 'テキスト / アイコン色 ') + color);
+    dot.className = 'dot' + (state[key] === color ? ' active' : '');
+    dot.style.background = color;
+    if (color === '#ffffff' || color === '#f5f5f5') dot.style.outline = '1px solid #555';
+    dot.addEventListener('click', () => {
+      state[key] = color;
+      syncColor(key);
+      container.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+      dot.classList.add('active');
+      updatePreview();
+    });
+    container.appendChild(dot);
+  });
+}
+
+function tintHex(){return '#'+[state.glassTintR,state.glassTintG,state.glassTintB].map(n=>n.toString(16).padStart(2,'0')).join('');}
+function buildThemes(){THEMES.forEach(t=>{const b=document.createElement('button');b.className='font-btn';b.textContent=t.label;b.addEventListener('click',()=>{state.bg=t.tintHex;state.fg=t.fg;syncColor('bg');syncColor('fg');updatePreview();});document.getElementById('themeGrid').append(b);});}
+function syncColor(key) {
+  if (key === 'bg') {
+    document.getElementById('bgPicker').value = state.bg;
+    document.getElementById('bgText').value   = state.bg;
+  } else {
+    document.getElementById('fgPicker').value = state.fg;
+    document.getElementById('fgText').value   = state.fg;
+  }
+}
+
+function attachColor(pickerId, textId, key, dotsId) {
+  document.getElementById(pickerId).addEventListener('input', e => {
+    state[key] = e.target.value;
+    document.getElementById(textId).value = e.target.value;
+    document.querySelectorAll(`#${dotsId} .dot`).forEach(d => d.classList.remove('active'));
+    updatePreview();
+  });
+  document.getElementById(textId).addEventListener('input', e => {
+    const v = e.target.value;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+      state[key] = v;
+      document.getElementById(pickerId).value = v;
+      document.querySelectorAll(`#${dotsId} .dot`).forEach(d => d.classList.remove('active'));
+      updatePreview();
+    }
+  });
+}
+
+/* 読み込んだ設定を、最初から画面に作ってある部品へ映す */
+function syncControls() {
+  document.getElementById('textInput').value = state.text;
+  document.getElementById('speedSlider').value = state.speed;
+  document.getElementById('widthSlider').value = state.width;
+  document.getElementById('fontSizeSlider').value = state.fontSize;
+  document.getElementById('scrollToggle').checked = state.scroll;
+  document.querySelectorAll('.shape-btn').forEach(b => b.classList.toggle('active', b.dataset.shape === state.shape));
+  syncColor('bg'); syncColor('fg');
+}
+
+function init() {
+  loadState();
+  buildIcons(); buildFonts(); buildWeights();buildThemes();
+  for(const [id,key] of [['bgAlphaSlider','glassBgAlpha'],['bdAlphaSlider','glassBdAlpha']]) document.getElementById(id).addEventListener('input',e=>{state[key]=Number(e.target.value)/100;updatePreview();});
+  buildDots('bgDots', BG_PRESETS, 'bg');
+  buildDots('fgDots', FG_PRESETS, 'fg');
+
+  /* 日本語の変換中は送らない。確定したときに反映する。 */
+  const textInput = document.getElementById('textInput');
+  textInput.addEventListener('input', e => {
+    if (e.isComposing) return;
+    state.text = e.target.value; updatePreview();
+  });
+  textInput.addEventListener('compositionend', e => {
+    state.text = e.target.value; updatePreview();
+  });
+  document.getElementById('speedSlider').addEventListener('input', e => { state.speed = parseInt(e.target.value); updatePreview(); });
+  document.getElementById('widthSlider').addEventListener('input', e => { state.width = parseInt(e.target.value); updatePreview(); });
+  document.getElementById('fontSizeSlider').addEventListener('input', e => { state.fontSize = parseInt(e.target.value); updatePreview(); });
+  document.getElementById('scrollToggle').addEventListener('change', e => { state.scroll = e.target.checked; updatePreview(); });
+
+  document.querySelectorAll('.shape-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.shape = btn.dataset.shape;
+      document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updatePreview();
+    });
+  });
+
+  document.getElementById('swapBtn').addEventListener('click', () => {
+    [state.bg, state.fg] = [state.fg, state.bg];
+    syncColor('bg'); syncColor('fg');
+    document.querySelectorAll('#bgDots .dot, #fgDots .dot').forEach(d => d.classList.remove('active'));
+    updatePreview();
+  });
+
+  attachColor('bgPicker', 'bgText', 'bg', 'bgDots');
+  attachColor('fgPicker', 'fgText', 'fg', 'fgDots');
+
+  syncControls();
+
+  document.getElementById('obsPort').value = String(loadPort());
+  document.getElementById('obsConnect').addEventListener('click', connectOBS);
+  document.getElementById('obsPass').addEventListener('keydown', e => { if (e.key === 'Enter') connectOBS(); });
+  /* 表示ソース用URL。パスワードは encodeURIComponent で包むので "+" や "/" でも壊れない（C09）。 */
+  document.getElementById('urlMake').addEventListener('click', () => {
+    const port = document.getElementById('obsPort').value.trim();
+    const pw = document.getElementById('obsPass').value;
+    const u = new URL('overlay-ws.html', location.href);
+    u.hash = 'port=' + encodeURIComponent(port) + (pw ? '&password=' + encodeURIComponent(pw) : '');
+    const out = document.getElementById('sourceUrl');
+    out.value = u.href; out.select();
+    /* クリップボードへの書き込みは拒否されることがある。欄を選択した状態なので、そのままコピーできる。 */
+    try { if (navigator.clipboard) navigator.clipboard.writeText(u.href).catch(() => {}); } catch (e) {}
+  });
+
+  // Free editor has no OBS connection.
+  updatePreview();
+}
+
+init();
+new ResizeObserver(() => {
+  const scale=Math.max(.05,Math.min(1,(document.querySelector('.preview-wrap').clientWidth-24)/state.width));
+  document.getElementById('previewBar').style.transform='scale('+scale+')';
+  document.getElementById('previewScale').style.width=Math.round(state.width*scale)+'px';
+  document.getElementById('previewScale').style.height=Math.round(Math.max(44,Math.round(state.fontSize*3.2))*scale)+'px';
+}).observe(document.querySelector('.preview-wrap'));
+</script>
+<script src="scrolly-customize.js"></script>
+<script>
+let reportedHeight=0;
+new ResizeObserver(()=>{const height=document.body.scrollHeight+24;if(Math.abs(height-reportedHeight)>1){reportedHeight=height;parent.postMessage({type:'scrolly-height',product:"glass",height},location.protocol==='file:'?'*':location.origin);}}).observe(document.body);
+window.addEventListener('message',e=>{if(e.source===parent&&e.data?.type==='scrolly-request')sendSettings();});
+</script></body>
+</html>
