@@ -123,8 +123,11 @@ button,input,select{font:inherit;color:inherit;min-width:0}button,summary,input[
 </div></section>
 <section class="card"><h2>デザイン</h2>
 <div class="section">
-  <label class="field-label" for="cornerSlider">角の丸み</label>
-  <div class="slider-row"><input id="cornerSlider" type="range" min="0" max="100" step="0.01" aria-label="角の丸み"><input id="cornerNumber" type="number" min="0" max="100" step="0.01" aria-label="角の丸み（%）" style="width:80px">%</div>
+<div class="field-label">バーの形</div>
+  <div class="shape-grid" aria-label="バーの形">
+    <button type="button" class="shape-btn" data-shape="round"><span class="shape-preview" style="border-radius:999px"></span><span>カプセル</span></button>
+    <button type="button" class="shape-btn" data-shape="square"><span class="shape-preview" style="border-radius:4px"></span><span>角丸</span></button>
+  </div>
 </div>
 <div class="section">
   <div class="field-label">背景色</div>
@@ -146,7 +149,7 @@ button,input,select{font:inherit;color:inherit;min-width:0}button,summary,input[
 
 
 <script>
-const ICONS_LIST = window.SCROLLY.ICONS;
+const ICONS_LIST = window.SCROLLY.ICONS.filter(i => ['none','music','mic','radio','gamepad','dice','star','heart','chat','hash'].includes(i.id));
 const FONTS_LIST = window.SCROLLY.FONTS;
 
 const COLOR_PRESETS = ['#ffffff', '#f3f0e9', '#d6d3cd', '#96999e', '#34373d', '#17191d', '#dce7f2', '#718ba8', '#dfe9df', '#7e9988', '#e7e1f0', '#9a8bae', '#f1dfe1', '#b58790'];
@@ -174,7 +177,6 @@ function loadState() {
   if (ICONS_LIST.some(i => i.id === raw.icon)) state.icon = raw.icon;
   if (FONTS_LIST.some(f => f.id === raw.font)) state.font = raw.font;
   if (raw.shape === 'round' || raw.shape === 'square') state.shape = raw.shape;
-  if (typeof raw.cornerPct === 'number' && Number.isFinite(raw.cornerPct) && raw.cornerPct>=0 && raw.cornerPct<=100) state.cornerPct=raw.cornerPct;
   if (typeof raw.scroll === 'boolean') state.scroll = raw.scroll;
   if (int(raw.speed, 6, 28)) state.speed = raw.speed;
   if (int(raw.width, 100, 800)) state.width = raw.width;
@@ -256,6 +258,7 @@ function sendSettings() {
 
 // ── プレビュー更新 ─────────────────────────────
 function updatePreview() {
+  delete state.cornerPct;
   document.querySelectorAll('.icon-btn,.font-btn,.shape-btn,.dot').forEach(el => el.setAttribute('aria-pressed', String(el.classList.contains('active'))));
   document.getElementById('scrollToggle').setAttribute('aria-checked', String(state.scroll));
   document.getElementById('speedSlider').setAttribute('aria-valuetext', String(state.speed));
