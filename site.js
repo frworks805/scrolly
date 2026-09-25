@@ -12,7 +12,7 @@ function makePreviewHTML(type,state){
     const h=bar.offsetHeight,w=bar.offsetWidth;
     const scale=Math.min(1,innerWidth*.85/w,innerHeight*.72/h);
     const left=corner.endsWith('left'),top=corner.startsWith('top');
-    Object.assign(bar.style,{position:'absolute',left:left?'4%':'auto',right:left?'auto':'4%',top:top?'14%':'auto',bottom:top?'auto':'14%',transform:'scale('+scale+')',transformOrigin:(left?'left':'right')+' '+(top?'top':'bottom'),transition:'none',isolation:'isolate',clipPath:'inset(0 round '+getComputedStyle(bar).borderTopLeftRadius+')'});
+    Object.assign(bar.style,{position:'absolute',left:left?'4%':'auto',right:left?'auto':'4%',top:top?'14%':'auto',bottom:top?'auto':'14%',transform:'scale('+scale+')',transformOrigin:(left?'left':'right')+' '+(top?'top':'bottom'),transition:'none',filter:'none',isolation:'isolate',clipPath:'inset(0 round '+getComputedStyle(bar).borderTopLeftRadius+')'});
   }
   addEventListener('message',e=>{if(e.source!==parent||e.data?.type!=='scrolly-preview-position'||!['top-left','top-right','bottom-left','bottom-right'].includes(e.data.position))return;corner=e.data.position;fitPreview();});
   new ResizeObserver(fitPreview).observe(document.documentElement);fitPreview();
